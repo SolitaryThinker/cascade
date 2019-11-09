@@ -30,6 +30,9 @@
 
 #include "target/core/avmm/verilator/verilator_compiler.h"
 
+#include <fstream>
+#include "common/system.h"
+
 using namespace std;
 
 namespace cascade {
@@ -50,6 +53,10 @@ VerilatorLogic* VerilatorCompiler::build(Interface* interface, ModuleDeclaration
 bool VerilatorCompiler::compile(const string& text, mutex& lock) {
   (void) lock;
   get_compiler()->schedule_state_safe_interrupt([this, &text]{
+      ofstream ofs(System::src_root() + "/src/target/core/avmm/verilator/device/program_logic.v");
+      ofs << text << endl;
+      ofs.close();
+      std::cout << "compile end\n";
     // TODO...
   });
   return true;
