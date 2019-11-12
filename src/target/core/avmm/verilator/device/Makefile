@@ -1,5 +1,5 @@
 all:
-	verilator -O3 --cc -Wno-lint -Wno-fatal program_logic.v --exe sim_main.cpp
+	verilator -O3 --cc -Wno-lint -Wno-fatal --clk clk program_logic.v --exe sim_main.cpp
 	make -k -C obj_dir -f Vprogram_logic.mk Vprogram_logic
 
 prepare:
@@ -7,3 +7,6 @@ prepare:
 
 clean:
 	rm -rf obj_dir/
+
+test:
+	g++ test.cpp -o test

@@ -32,12 +32,37 @@
 
 namespace cascade {
 
-VerilatorLogic::VerilatorLogic(Interface* interface, ModuleDeclaration* md, size_t slot) : AvmmLogic<uint32_t>(interface, md) {
-  get_table()->set_read([slot](size_t index) {
+VerilatorLogic::VerilatorLogic(Interface* interface, ModuleDeclaration* md, size_t slot, int sock_stream) : AvmmLogic<uint32_t>(interface, md) {
+  printf("in VerilatorLogic\n");
+  get_table()->set_read([slot, sock_stream](size_t index) {
+      printf("IN SET READsent\n");
+    uint8_t bytes[7];
+    const uint16_t vid = index | (slot << 12);
+    bytes[0] = 2;
+    bytes[1] = vid >> 8;
+    bytes[2] = vid;
+    send(sock_stream, bytes, 7, 0);
+    ::read(sock_stream, bytes, 4);
+    //reqs->sputn(reinterpret_cast<const char*>(bytes), 3);
+    //resps->waitforn(reinterpret_cast<char*>(bytes), 4);
+    return (bytes[3]) | (bytes[2] << 8) | (bytes[1] << 16) | (bytes[0] << 24);
     // TODO...
     return 0;
   });
-  get_table()->set_write([slot](size_t index, uint32_t val) {
+  get_table()->set_write([slot, sock_stream](size_t index, uint32_t val) {
+      printf("IN SET WRITE\n");
+    uint8_t bytes[7];
+    const uint16_t vid = index | (slot << 12);
+    const uint32_t data = val;
+    bytes[0] = 1;
+    bytes[1] = vid >> 8;
+    bytes[2] = vid;
+    bytes[3] = data >> 24;
+    bytes[4] = data >> 16;
+    bytes[5] = data >> 8;
+    bytes[6] = data;
+    send(sock_stream, bytes, 7, 0 );
+    //reqs->sputn(reinterpret_cast<const char*>(bytes), 7);
     // TODO...
   });
 }
