@@ -35,9 +35,11 @@
 
 namespace cascade {
 
+class sockbuf;
+
 class VerilatorLogic : public AvmmLogic<uint32_t> {
   public:
-    VerilatorLogic(Interface* interface, ModuleDeclaration* md, size_t slot, int sock_stream);
+    VerilatorLogic(Interface* interface, ModuleDeclaration* md, size_t slot, sockbuf* sock_stream);
     virtual ~VerilatorLogic() override = default;
 };
 

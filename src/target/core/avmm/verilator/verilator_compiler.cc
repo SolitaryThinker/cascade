@@ -32,16 +32,13 @@
 
 #include <fstream>
 #include <stdio.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <string.h>
+#include <sys/wait.h>
+
 
 #include "common/system.h"
-#define PORT 8080
 
 using namespace std;
-int bind_and_listen();
+
 namespace cascade {
 
 VerilatorCompiler::VerilatorCompiler() : AvmmCompiler<uint32_t>() {
@@ -55,34 +52,34 @@ VerilatorCompiler::~VerilatorCompiler() {
 VerilatorLogic* VerilatorCompiler::build(Interface* interface, ModuleDeclaration* md, size_t slot) {
   // TODO...
   std::cout << "building VerilatorLogic\n";
+  int sock = 0;
 
-  int sock = bind_and_listen();
+  //int sock = bind_and_listen();
 
-  int valread;
-  char buffer[1024] = {0};
-  char *hello = "Hello from server";
-
-  printf("reading\n");
-  valread = ::read( sock , buffer, 1024);
-  printf("%s\n",buffer );
-  printf("sending\n");
-  send(sock , hello , strlen(hello) , 0 );
-  printf("Hello message sent\n");
-
-
-  return new VerilatorLogic(interface, md, slot, sock);
+  return new VerilatorLogic(interface, md, slot, &sock_stream_);
 }
 
 bool VerilatorCompiler::compile(const string& text, mutex& lock) {
   (void) lock;
-      std::cout << "compile begin\n";
-  get_compiler()->schedule_state_safe_interrupt([this, &text]{
-      ofstream ofs(System::src_root() + "/src/target/core/avmm/verilator/device/program_logic.v");
-      ofs << text << endl;
-      ofs.close();
-      std::cout << "compile end\n";
+
+  std::cout << "compile begin\n";
+get_compiler()->schedule_state_safe_interrupt([this, &text]{
+
+  ofstream ofs(System::src_root() + "/src/target/core/avmm/verilator/device/program_logic.v");
+  ofs << text << endl;
+  ofs.close();
+  std::cout << "compile end\n";
+  if (!compile_verilator()) {
+    exit(1);
+  }
+  sock_stream_.initialize_stream();
+  //if (!start_verilator()) {
+    //exit(1);
+  //}
+
     // TODO...
   });
+  //return false;
   return true;
 }
 
@@ -90,53 +87,77 @@ void VerilatorCompiler::stop_compile() {
   // Does nothing. 
 }
 
-} // namespace cascade
-
-int bind_and_listen() {
-  int server_fd, new_socket;
-  struct sockaddr_in address;
-  int opt = 1;
-  int addrlen = sizeof(address);
-
-  // Creating socket file descriptor
-  if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
-  {
-      perror("socket failed");
-      exit(EXIT_FAILURE);
+inline bool VerilatorCompiler::compile_verilator() {
+  int pid = -1;
+  if ((pid = fork()) == 0) {
+    // child
+    if (chdir((System::src_root() + "/src/target/core/avmm/verilator/device/").c_str()) == -1) {
+      perror("chdir failed");
+    }
+    int dev_null = open("/dev/null", O_WRONLY);
+    if (freopen("/dev/null", "a", stdout) == NULL) {
+      perror("freopen dev null failed");
+    }
+    if (dup2(fileno(stdout), STDERR_FILENO) == -1) {
+      perror("dup2 failed");
+    }
+    if (execlp("make", NULL) == -1) {
+      perror("exec failed");
+    }
+  } else if (pid > 0) {
+    int status;
+    // parent
+    if (waitpid(pid, &status, 0) == -1) {
+      perror("waitpid failed");
+    }
+    if (WEXITSTATUS(status) == 0) {
+      std::cout<<"make success\n";
+    } else {
+      std::cout<<"make failed\n";
+      return false;
+    }
+  } else {
+    perror("fork failed");
+    return false;
   }
-
-  // Forcefully attaching socket to the port 8080
-  if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
-                                                &opt, sizeof(opt)))
-  {
-      perror("setsockopt");
-      exit(EXIT_FAILURE);
-  }
-  address.sin_family = AF_INET;
-  address.sin_addr.s_addr = INADDR_ANY;
-  address.sin_port = htons( PORT );
-
-  // Forcefully attaching socket to the port 8080
-  if (bind(server_fd, (struct sockaddr *)&address,
-                               sizeof(address))<0)
-  {
-      perror("bind failed");
-      exit(EXIT_FAILURE);
-  }
-  printf("listening\n");
-  if (listen(server_fd, 3) < 0)
-  {
-      perror("listen");
-      exit(EXIT_FAILURE);
-  }
-  printf("accepting\n");
-  if ((new_socket = accept(server_fd, (struct sockaddr *)&address,
-                     (socklen_t*)&addrlen))<0)
-  {
-      perror("accept");
-      exit(EXIT_FAILURE);
-  }
-
-  return new_socket;
+  return true;
 }
 
+inline bool VerilatorCompiler::start_verilator() {
+  int pid = -1;
+  if ((pid = fork()) == 0) {
+    // child
+    if (chdir((System::src_root() + "/src/target/core/avmm/verilator/device/").c_str()) == -1) {
+      perror("chdir failed");
+    }
+    int dev_null = open("/dev/null", O_WRONLY);
+    if (freopen("/dev/null", "a", stdout) == NULL) {
+      perror("freopen dev null failed");
+    }
+    if (dup2(fileno(stdout), STDERR_FILENO) == -1) {
+      perror("dup2 failed");
+    }
+    if (execlp("make", NULL) == -1) {
+      perror("exec failed");
+    }
+  } else if (pid > 0) {
+    int status;
+    // parent
+    if (waitpid(pid, &status, 0) == -1) {
+      perror("waitpid failed");
+    }
+    if (WEXITSTATUS(status) == 0) {
+      std::cout<<"make success\n";
+    } else {
+      std::cout<<"make failed\n";
+      return false;
+    }
+  } else {
+    perror("fork failed");
+    return false;
+  }
+  return true;
+}
+
+
+} // namespace cascade

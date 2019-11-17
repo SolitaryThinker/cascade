@@ -33,6 +33,7 @@
 
 #include "target/core/avmm/avmm_compiler.h"
 #include "target/core/avmm/verilator/verilator_logic.h"
+#include "target/core/avmm/verilator/sockbuf.h"
 #include "target/core/avmm/avmm_compiler.h"
 
 namespace cascade {
@@ -47,6 +48,10 @@ class VerilatorCompiler : public AvmmCompiler<uint32_t> {
     VerilatorLogic* build(Interface* interface, ModuleDeclaration* md, size_t slot) override;
     bool compile(const std::string& text, std::mutex& lock) override;
     void stop_compile() override;
+    bool compile_verilator();
+    bool start_verilator();
+
+    sockbuf sock_stream_ = sockbuf(8080);
 };
 
 } // namespace cascade

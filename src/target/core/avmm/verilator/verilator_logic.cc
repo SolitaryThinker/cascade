@@ -29,10 +29,11 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "target/core/avmm/verilator/verilator_logic.h"
+#include "target/core/avmm/verilator/sockbuf.h"
 
 namespace cascade {
 
-VerilatorLogic::VerilatorLogic(Interface* interface, ModuleDeclaration* md, size_t slot, int sock_stream) : AvmmLogic<uint32_t>(interface, md) {
+VerilatorLogic::VerilatorLogic(Interface* interface, ModuleDeclaration* md, size_t slot, sockbuf* sock_stream) : AvmmLogic<uint32_t>(interface, md) {
   printf("in VerilatorLogic\n");
   get_table()->set_read([slot, sock_stream](size_t index) {
       printf("IN SET READsent\n");
@@ -41,8 +42,10 @@ VerilatorLogic::VerilatorLogic(Interface* interface, ModuleDeclaration* md, size
     bytes[0] = 2;
     bytes[1] = vid >> 8;
     bytes[2] = vid;
-    send(sock_stream, bytes, 7, 0);
-    ::read(sock_stream, bytes, 4);
+    //send(sock_stream, bytes, 7, 0);
+    //::read(sock_stream, bytes, 4);
+    sock_stream->sendn(reinterpret_cast<const char*>(bytes), 3);
+    sock_stream->waitforn(reinterpret_cast<char*>(bytes), 4);
     //reqs->sputn(reinterpret_cast<const char*>(bytes), 3);
     //resps->waitforn(reinterpret_cast<char*>(bytes), 4);
     return (bytes[3]) | (bytes[2] << 8) | (bytes[1] << 16) | (bytes[0] << 24);
@@ -61,7 +64,8 @@ VerilatorLogic::VerilatorLogic(Interface* interface, ModuleDeclaration* md, size
     bytes[4] = data >> 16;
     bytes[5] = data >> 8;
     bytes[6] = data;
-    send(sock_stream, bytes, 7, 0 );
+    //send(sock_stream, bytes, 7, 0 );
+    sock_stream->sendn(reinterpret_cast<const char*>(bytes), 7);
     //reqs->sputn(reinterpret_cast<const char*>(bytes), 7);
     // TODO...
   });

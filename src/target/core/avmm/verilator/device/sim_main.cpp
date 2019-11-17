@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <string.h>
+#include <netinet/tcp.h>
 
 #include "Vprogram_logic.h"
 #include "verilated.h"
@@ -23,32 +24,76 @@ int main(int argc, char** argv, char** env) {
   printf("port: %d\n", port);
 
   int sock = connect_to_cascade(argv[1], port);
+  FILE* sock_stream = fdopen(sock, "a+");
   top->reset = 0;
-  return 0;
+  char temp = 0;
+  char buf[4];
+  //while(1);
 
   while (!Verilated::gotFinish()) { 
-    if (main_time % 10 == 0) {
+    if (main_time % 1000000 == 0)
+      printf("progress %ld, %x\n", main_time, top->s0_waitrequest);
+    if (main_time % 10000 == 0) {
+      //printf("setting to 1\n");
       top->clk = 1;
+
       if ((top->s0_read || top->s0_write) && !top->s0_waitrequest) {
-        if (top->s0_read)
+        if (top->s0_read) {
+          char *data_out = (char *)&top->s0_readdata;
           printf("write some stuff\n");
+          buf[0] = data_out[3];
+          buf[1] = data_out[2];
+          buf[2] = data_out[1];
+          buf[3] = data_out[0];
+          //dprintf(sock, "%c%c%c%c", data_out[3], data_out[2], data_out[1], data_out[0]);
+          send(sock, buf, 4, 0);
+          printf("after send %x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
+        }
         top->s0_read = 0;
         top->s0_write = 0;
       }
       if (!(top->s0_read || top->s0_write)) {
-          printf("flush and scanf\n");
+        //printf("flush \n");
+        //fflush(sock_stream);
+        int c = recv(sock, buf, 3, 0);
+        //printf("c: %d\n",c);
+        //if (c != 3)
+          //perror("recv");
+        //printf("after scanf %x\n", buf);
+        printf("after scanf %x %x %x\n", buf[0], buf[1], buf[2]);
+        ((char *)&top->s0_address)[1] = buf[1];
+        ((char *)&top->s0_address)[0] = buf[2];
+        //exit(1);
+        if (feof(sock_stream)) {
+        //if (0) {
+          printf("eof!\n");
+        } else {
+          if (buf[0] & 0x1) {
+            printf("tmp\n");
+            char *data_in = (char *)&top->s0_writedata;
+            //fscanf(sock_stream, "%c%c%c%c", data_in[3], data_in[2], data_in[1], data_in[0]);
+            recv(sock, buf, 4, 0);
+            data_in[0] = buf[3];
+            data_in[1] = buf[2];
+            data_in[2] = buf[1];
+            data_in[3] = buf[0];
+            printf("after recv %x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
+          }
+          top->s0_read = buf[0] & 0x2;
+          top->s0_write = buf[0] & 0x1;
+        }
       }
-      printf("clk: %d\n", top->clk);
-      printf("s0_write: %d\n", top->s0_write);
-      printf("s0_read: %d\n", top->s0_read);
-      //std::cout<<"clk: " << top->clk << std::endl;
-      //std::cout<<"s0_read: " << top->s0_read << std::endl;
-      //std::cout<<"s0_write: " << top->s0_write << std::endl;
-      std::cout<<"s0_writedata: " << top->s0_writedata << std::endl;
-      std::cout<<"s0_readdata: " << top->s0_readdata << std::endl;
-      std::cout<<"s0_waitrequest: " << top->s0_waitrequest << std::endl;
+      //printf("clk: %d\n", top->clk);
+      //printf("s0_write: %d\n", top->s0_write);
+      //printf("s0_read: %d\n", top->s0_read);
+      ////std::cout<<"clk: " << top->clk << std::endl;
+      ////std::cout<<"s0_read: " << top->s0_read << std::endl;
+      ////std::cout<<"s0_write: " << top->s0_write << std::endl;
+      //std::cout<<"s0_writedata: " << top->s0_writedata << std::endl;
+      //std::cout<<"s0_readdata: " << top->s0_readdata << std::endl;
+      //std::cout<<"s0_waitrequest: " << top->s0_waitrequest << std::endl;
     }
-    if (main_time % 10 == 6) {
+    if (main_time % 10000 == 5001) {
       top->clk = 0;
     }
 
@@ -64,6 +109,7 @@ int main(int argc, char** argv, char** env) {
 }
 
 int connect_to_cascade(char *addr, int port) {
+  int opt = 1;
   int sock = 0, valread;
   struct sockaddr_in serv_addr;
   char *hello = "Hello from client";
@@ -90,9 +136,18 @@ int connect_to_cascade(char *addr, int port) {
     printf("\nConnection Failed \n");
     return -1;
   }
-  send(sock , hello , strlen(hello) , 0 );
-  printf("Hello message sent\n");
-  valread = read( sock , buffer, 1024);
-  printf("%s\n",buffer );
+  if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt))) {
+    perror("setsockopt");
+    return -1;
+  }
+  //send(sock , hello , strlen(hello) , 0 );
+  //printf("Hello message sent\n");
+  //sleep(5);
+  //valread = read( sock , buffer, 1024);
+  //printf("%s\n",buffer );
+  //valread = recv( sock , buffer, 7, MSG_WAITALL);
+  //printf("%x\n",buffer );
+  //exit(1);
   
+  return sock;
 }
