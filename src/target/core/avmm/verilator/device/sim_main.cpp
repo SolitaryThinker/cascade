@@ -55,6 +55,7 @@ int main(int argc, char** argv, char** env) {
         }
         top->s0_read = 0;
         top->s0_write = 0;
+        printf("\n");
       }
       if (!(top->s0_read || top->s0_write)) {
         printf("no request=====\n");
@@ -63,7 +64,7 @@ int main(int argc, char** argv, char** env) {
           perror("recv");
           exit(1);
         }
-        printf("after scanf %x %x %x\n", buf[0], buf[1], buf[2]);
+        printf("after recv %x %x %x\n", buf[0], buf[1], buf[2]);
         ((char *)&top->s0_address)[1] = buf[1];
         ((char *)&top->s0_address)[0] = buf[2];
         if (feof(sock_stream)) {
@@ -86,6 +87,7 @@ int main(int argc, char** argv, char** env) {
           }
           top->s0_read = buf[0] & 0x2;
           top->s0_write = buf[0] & 0x1;
+          printf("\n");
         }
       }
       //printf("clk: %d\n", top->clk);
