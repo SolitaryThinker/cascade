@@ -50,7 +50,6 @@ class sockbuf {
     // Constructors:
     sockbuf(int port);
     //~sockbuf();
-    
     void initialize_stream();
     // Blocking Read:
     void waitforn(char* s, size_t count);
@@ -61,27 +60,11 @@ class sockbuf {
     int port_;
     // Shared data buffer:
     std::queue<char *> data_;
-
-    // Synchronization:
-    std::mutex mut_;
-    std::condition_variable cv_;
-    
-    // Get Area:
-    //int_type uflow() override;
-    //std::streamsize xsgetn(char_type* s, std::streamsize count) override;
-
-    //// Put Area:
-    //std::streamsize xsputn(const char_type* s, std::streamsize count) override;
 };
 
 inline sockbuf::sockbuf(int port) {
   port_ = port;
 }
-
-//inline sockbuf::~sockbuf() {
-  //delete data_;
-  //std::cout << "Final capacity: " << data_cap_ << std::endl;
-//}
 
 inline void sockbuf::waitforn(char* s, size_t count) {
   std::cout<<"sockbuf waiting\n";
@@ -93,23 +76,14 @@ inline void sockbuf::waitforn(char* s, size_t count) {
 }
 
 inline void sockbuf::sendn(const char* s, size_t count) {
-  // need to buffer in queue until stream is initialized
-  if (socket_fd_ == -1) {
-    std::cout<<"adding to queue\n";
-    char *buffer = new char[count];
-    std::copy(s, s+count, buffer);
-    data_.push(buffer);
-  } else {
-    std::cout<<"sockbuf sending\n";
-    for (int i = 0; i < count; i++)
-      printf("%x\n", s[i]);
-    printf("\n");
-    int c = send(socket_fd_, s, count, 0);
-    if (c != count) {
-      perror("did not match");
-      exit(1);
-    }
-    //fsync(socket_fd_);
+  std::cout<<"sockbuf sending\n";
+  for (int i = 0; i < count; i++)
+    printf("%x\n", s[i]);
+  printf("\n");
+  int c = send(socket_fd_, s, count, 0);
+  if (c != count) {
+    perror("did not match");
+    exit(1);
   }
 }
 
@@ -163,11 +137,8 @@ inline void sockbuf::initialize_stream() {
       exit(EXIT_FAILURE);
   }
   socket_fd_ = new_socket;
-  //while(1);
-
   //int valread;
   //char buffer[1024] = {0};
-  char *hello = "Hello from server";
 
   //printf("reading\n");
   //valread = ::read( socket_fd_ , buffer, 1024);

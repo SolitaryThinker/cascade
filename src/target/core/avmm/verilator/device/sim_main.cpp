@@ -40,39 +40,44 @@ int main(int argc, char** argv, char** env) {
       if ((top->s0_read || top->s0_write) && !top->s0_waitrequest) {
         if (top->s0_read) {
           char *data_out = (char *)&top->s0_readdata;
-          printf("write some stuff\n");
+          printf("read request=====\n");
           buf[0] = data_out[3];
           buf[1] = data_out[2];
           buf[2] = data_out[1];
           buf[3] = data_out[0];
           //dprintf(sock, "%c%c%c%c", data_out[3], data_out[2], data_out[1], data_out[0]);
-          send(sock, buf, 4, 0);
+          int c = send(sock, buf, 4, 0);
+          if (c == -1) {
+            perror("send");
+            exit(1);
+          }
           printf("after send %x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
         }
         top->s0_read = 0;
         top->s0_write = 0;
       }
       if (!(top->s0_read || top->s0_write)) {
-        //printf("flush \n");
-        //fflush(sock_stream);
+        printf("no request=====\n");
         int c = recv(sock, buf, 3, 0);
-        //printf("c: %d\n",c);
-        //if (c != 3)
-          //perror("recv");
-        //printf("after scanf %x\n", buf);
+        if (c == -1) {
+          perror("recv");
+          exit(1);
+        }
         printf("after scanf %x %x %x\n", buf[0], buf[1], buf[2]);
         ((char *)&top->s0_address)[1] = buf[1];
         ((char *)&top->s0_address)[0] = buf[2];
-        //exit(1);
         if (feof(sock_stream)) {
-        //if (0) {
           printf("eof!\n");
         } else {
           if (buf[0] & 0x1) {
-            printf("tmp\n");
+            printf("write request======\n");
             char *data_in = (char *)&top->s0_writedata;
             //fscanf(sock_stream, "%c%c%c%c", data_in[3], data_in[2], data_in[1], data_in[0]);
-            recv(sock, buf, 4, 0);
+            int c = recv(sock, buf, 4, 0);
+            if (c == -1) {
+              perror("recv");
+              exit(1);
+            }
             data_in[0] = buf[3];
             data_in[1] = buf[2];
             data_in[2] = buf[1];

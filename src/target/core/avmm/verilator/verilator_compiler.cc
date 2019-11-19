@@ -50,18 +50,11 @@ VerilatorCompiler::~VerilatorCompiler() {
 }
 
 VerilatorLogic* VerilatorCompiler::build(Interface* interface, ModuleDeclaration* md, size_t slot) {
-  // TODO...
-  std::cout << "building VerilatorLogic\n";
-  int sock = 0;
-
-  //int sock = bind_and_listen();
-
   return new VerilatorLogic(interface, md, slot, &sock_stream_);
 }
 
 bool VerilatorCompiler::compile(const string& text, mutex& lock) {
   (void) lock;
-
   std::cout << "compile begin\n";
 get_compiler()->schedule_state_safe_interrupt([this, &text]{
 
@@ -76,8 +69,6 @@ get_compiler()->schedule_state_safe_interrupt([this, &text]{
   //if (!start_verilator()) {
     //exit(1);
   //}
-
-    // TODO...
   });
   //return false;
   return true;
@@ -123,6 +114,7 @@ inline bool VerilatorCompiler::compile_verilator() {
   return true;
 }
 
+//TODO...
 inline bool VerilatorCompiler::start_verilator() {
   int pid = -1;
   if ((pid = fork()) == 0) {
