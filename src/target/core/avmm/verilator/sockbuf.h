@@ -101,10 +101,15 @@ inline void sockbuf::initialize_stream() {
   }
 
   // Forcefully attaching socket to the port 8080
-  if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
-                                                &opt, sizeof(opt)))
+  if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)))
   {
-      perror("setsockopt");
+      perror("setsockopt SO_REUSEADDR");
+      exit(EXIT_FAILURE);
+  }
+
+  if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt)))
+  {
+      perror("setsockopt SO_REUSEPORT");
       exit(EXIT_FAILURE);
   }
   address.sin_family = AF_INET;
