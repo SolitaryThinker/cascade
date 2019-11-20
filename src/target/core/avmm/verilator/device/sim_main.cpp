@@ -30,64 +30,89 @@ int main(int argc, char** argv, char** env) {
   char buf[4];
   //while(1);
 
+  // initialize variables
+  top->s0_read = 0;
+  top->s0_write = 0;
+
+  top->s0_address = 0;
+  top->s0_writedata = 0;
+  top->s0_readdata = 0;
+
+  top->clk = 0;
+  top->eval();
+  top->clk = 1;
+  top->eval();
+
   while (!Verilated::gotFinish()) { 
-    if (main_time % 1000000 == 0)
-      printf("progress %ld, %x\n", main_time, top->s0_waitrequest);
-    if (main_time % 10000 == 0) {
+    //if (main_time % 1000000 == 0)
+      //printf("progress %ld, %x\n", main_time, top->s0_waitrequest);
+    if (main_time % 2 == 0) {
       //printf("setting to 1\n");
       top->clk = 1;
+      //top->eval();
 
       if ((top->s0_read || top->s0_write) && !top->s0_waitrequest) {
+        printf("progress %ld\n", main_time);
         if (top->s0_read) {
           char *data_out = (char *)&top->s0_readdata;
-          printf("read request=====\n");
+          //printf("read request=====\n");
           buf[0] = data_out[3];
           buf[1] = data_out[2];
           buf[2] = data_out[1];
           buf[3] = data_out[0];
           //dprintf(sock, "%c%c%c%c", data_out[3], data_out[2], data_out[1], data_out[0]);
           int c = send(sock, buf, 4, 0);
-          if (c == -1) {
-            perror("send");
-            exit(1);
-          }
-          printf("after send %x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
+          //if (c == -1) {
+            //perror("send");
+            //exit(1);
+          //}
+          //printf("after send %x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
         }
         top->s0_read = 0;
         top->s0_write = 0;
-        printf("\n");
+
+        top->clk = 0;
+        top->eval();
+        top->clk = 1;
+        top->eval();
+        //top->clk = 0;
+        //top->eval();
+        //top->clk = 1;
+        //top->eval();
+
+        //printf("\n");
       }
       if (!(top->s0_read || top->s0_write)) {
-        printf("no request=====\n");
+        //printf("no request=====\n");
         int c = recv(sock, buf, 3, 0);
-        if (c == -1) {
-          perror("recv");
-          exit(1);
-        }
-        printf("after recv %x %x %x\n", buf[0], buf[1], buf[2]);
+        //if (c == -1) {
+          //perror("recv");
+          //exit(1);
+        //}
+        //printf("after recv %x %x %x\n", buf[0], buf[1], buf[2]);
         ((char *)&top->s0_address)[1] = buf[1];
         ((char *)&top->s0_address)[0] = buf[2];
         if (feof(sock_stream)) {
           printf("eof!\n");
         } else {
+          top->s0_read = (buf[0] & 0x2) ? 1 : 0;
+          top->s0_write = (buf[0] & 0x1) ? 1 : 0;
           if (buf[0] & 0x1) {
-            printf("write request======\n");
+            //printf("write request======\n");
             char *data_in = (char *)&top->s0_writedata;
             //fscanf(sock_stream, "%c%c%c%c", data_in[3], data_in[2], data_in[1], data_in[0]);
             int c = recv(sock, buf, 4, 0);
-            if (c == -1) {
-              perror("recv");
-              exit(1);
-            }
+            //if (c == -1) {
+              //perror("recv");
+              //exit(1);
+            //}
             data_in[0] = buf[3];
             data_in[1] = buf[2];
             data_in[2] = buf[1];
             data_in[3] = buf[0];
-            printf("after recv %x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
+            //printf("after recv %x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
           }
-          top->s0_read = buf[0] & 0x2;
-          top->s0_write = buf[0] & 0x1;
-          printf("\n");
+          //printf("\n");
         }
       }
       //printf("clk: %d\n", top->clk);
@@ -100,7 +125,7 @@ int main(int argc, char** argv, char** env) {
       //std::cout<<"s0_readdata: " << top->s0_readdata << std::endl;
       //std::cout<<"s0_waitrequest: " << top->s0_waitrequest << std::endl;
     }
-    if (main_time % 10000 == 5001) {
+    if (main_time % 2 == 1) {
       top->clk = 0;
     }
 

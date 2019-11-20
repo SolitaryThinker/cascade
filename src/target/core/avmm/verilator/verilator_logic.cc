@@ -34,9 +34,9 @@
 namespace cascade {
 
 VerilatorLogic::VerilatorLogic(Interface* interface, ModuleDeclaration* md, size_t slot, sockbuf* sock_stream) : AvmmLogic<uint32_t>(interface, md) {
-  printf("in VerilatorLogic\n");
+  //printf("in VerilatorLogic\n");
   get_table()->set_read([slot, sock_stream](size_t index) {
-      printf("IN SET READsent\n");
+      //printf("IN SET READsent\n");
     uint8_t bytes[7];
     const uint16_t vid = index | (slot << 12);
     bytes[0] = 2;
@@ -53,7 +53,7 @@ VerilatorLogic::VerilatorLogic(Interface* interface, ModuleDeclaration* md, size
     return 0;
   });
   get_table()->set_write([slot, sock_stream](size_t index, uint32_t val) {
-      printf("IN SET WRITE\n");
+      //printf("IN SET WRITE\n");
     uint8_t bytes[7];
     const uint16_t vid = index | (slot << 12);
     const uint32_t data = val;

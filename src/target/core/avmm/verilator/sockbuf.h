@@ -67,7 +67,7 @@ inline sockbuf::sockbuf(int port) {
 }
 
 inline void sockbuf::waitforn(char* s, size_t count) {
-  std::cout<<"sockbuf waiting\n";
+  //std::cout<<"sockbuf waiting\n";
   int c = ::read(socket_fd_, s, count);
   if (c != count) {
     perror("did not match");
@@ -76,10 +76,10 @@ inline void sockbuf::waitforn(char* s, size_t count) {
 }
 
 inline void sockbuf::sendn(const char* s, size_t count) {
-  std::cout<<"sockbuf sending\n";
-  for (int i = 0; i < count; i++)
-    printf("%x\n", s[i]);
-  printf("\n");
+  //std::cout<<"sockbuf sending\n";
+  //for (int i = 0; i < count; i++)
+    //printf("%x\n", s[i]);
+  //printf("\n");
   int c = send(socket_fd_, s, count, 0);
   if (c != count) {
     perror("did not match");
