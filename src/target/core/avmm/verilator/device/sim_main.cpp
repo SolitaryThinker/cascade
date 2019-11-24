@@ -11,12 +11,9 @@
 int connect_to_cascade(char *addr, int port);
 
 int main(int argc, char** argv, char** env) {
-  std::cout<<"main\n";
-
   //Verilated::commandArgs(argc, argv);
   Vprogram_logic* top = new Vprogram_logic;
 
-  std::cout<<"before while\n";
   vluint64_t main_time = 0;
 
   printf("addr: %s\n", argv[1]);
@@ -28,7 +25,6 @@ int main(int argc, char** argv, char** env) {
   top->reset = 0;
   char temp = 0;
   char buf[4];
-  //while(1);
 
   // initialize variables
   top->s0_read = 0;
@@ -52,7 +48,7 @@ int main(int argc, char** argv, char** env) {
       //top->eval();
 
       if ((top->s0_read || top->s0_write) && !top->s0_waitrequest) {
-        printf("progress %ld\n", main_time);
+        //printf("progress %ld\n", main_time);
         if (top->s0_read) {
           char *data_out = (char *)&top->s0_readdata;
           //printf("read request=====\n");
@@ -75,11 +71,6 @@ int main(int argc, char** argv, char** env) {
         top->eval();
         top->clk = 1;
         top->eval();
-        //top->clk = 0;
-        //top->eval();
-        //top->clk = 1;
-        //top->eval();
-
         //printf("\n");
       }
       if (!(top->s0_read || top->s0_write)) {
@@ -128,14 +119,9 @@ int main(int argc, char** argv, char** env) {
     if (main_time % 2 == 1) {
       top->clk = 0;
     }
-
-
-    //std::cout<<"before eval\n";
     top->eval(); 
-    //std::cout<<"after eval\n";
     main_time++;
   }
-    std::cout<<"after while\n";
   delete top;
   exit(0);
 }
@@ -144,7 +130,6 @@ int connect_to_cascade(char *addr, int port) {
   int opt = 1;
   int sock = 0, valread;
   struct sockaddr_in serv_addr;
-  char *hello = "Hello from client";
   char buffer[1024] = {0};
 
   if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)
@@ -172,14 +157,6 @@ int connect_to_cascade(char *addr, int port) {
     perror("setsockopt");
     return -1;
   }
-  //send(sock , hello , strlen(hello) , 0 );
-  //printf("Hello message sent\n");
-  //sleep(5);
-  //valread = read( sock , buffer, 1024);
-  //printf("%s\n",buffer );
-  //valread = recv( sock , buffer, 7, MSG_WAITALL);
-  //printf("%x\n",buffer );
-  //exit(1);
-  
+
   return sock;
 }
